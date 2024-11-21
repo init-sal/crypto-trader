@@ -1,0 +1,402 @@
+from selenium import webdriver # type: ignore
+from selenium.webdriver import Chrome # type: ignore
+from selenium.webdriver.chrome.options import Options # type: ignore
+from selenium.webdriver.common.keys import Keys
+import time
+
+class webDispatch:
+	def __init__(self, url):
+		self._url = url
+		self._buyind = ''
+		self._rsiind = ''
+		self._emaText = ''
+		self._coinopen = ''
+		self._coinclose = ''
+		self._macd = ''
+		self._macdfastsign = ''
+		self._ordertype = ''
+		self._orderamount = ''
+		self._orderquantity = ''
+		self._currentprice = ''
+		self._sellindicate = ''
+
+	def readFile(self, pathway):
+		fh2 = open((pathway), mode='r')
+		for lines in fh2:
+			lines.strip()
+			text = lines
+		fh2.close()
+
+		return text
+
+	def handler(self):
+		PATH = r"C:\Users\chromedriver.exe"
+		driver = webdriver.Chrome()
+		options = webdriver.ChromeOptions()
+		options.add_experimental_option("detach", True)
+		driver.get(self._url)
+		driver.maximize_window()
+		username = self.readFile('login.txt')
+		password = self.readFile('pass.txt')
+		self.login(driver, username, password)
+		return driver
+
+	def login(self, driver, username, password):
+		usernameField = driver.find_element("xpath", '/html/body/div/div/div[1]/div/form/div[1]/input')
+		passwordField = driver.find_element("xpath", '/html/body/div/div/div[1]/div/form/div[2]/div/input')
+		usernameField.send_keys(username)
+		passwordField.send_keys(password)
+		time.sleep(20)
+		driver.find_element("xpath", '/html/body/div/div/div[1]/div/form/button').click()
+		self.refresh(driver)
+		time.sleep(3)
+		driver.find_element("xpath", '/html/body/header/div/div[1]/nav/ul/li[2]/a').click()
+		driver.find_element("xpath", '/html/body/section/div/div[3]/div[2]/div[1]/div/div/input').click()
+		return driver
+
+	def refresh(self, driver):
+		driver.refresh()
+		return driver
+	
+	def navigator(self, driver):
+		asset = 'https://www.coinspot.com.au/tradecoins'
+		driver.get(asset)
+		return driver
+
+	def listPick(self, driver, asset):
+		time.sleep(5)
+		assList = driver.find_element("xpath", '/html/body/section[2]/div/div/div[1]/input')
+		assList.send_keys(asset)
+		time.sleep(5)
+		row = driver.find_elements("xpath", "/html/body/section[2]/div/div/div[3]/table/tbody/tr[not(contains(@style,'display: none;'))]")
+		#hide them if you want, we will see straight through 
+		if row:
+			selpri = row[0].find_element("xpath", ".//td[4]").text
+			stripselpri = selpri.replace('$', '').replace(',', '')
+			self._currentprice = float(stripselpri)
+			print(self._currentprice)
+			time.sleep(2)
+			row[0].click()
+		else:
+			print("no visible rows")
+		return driver, asset, self._currentprice
+
+	def medium(self, driver):
+		driver.find_element("xpath", '/html/body/div[6]/div/div[1]/div[6]/div[1]/a[1]').click()
+		time.sleep(2)
+		driver.find_element("xpath", '/html/body/div[6]/div/div[1]/div[6]/div[1]/a[2]').click()
+		return driver
+	
+	def advChart(self, driver):
+		iframe = driver.find_element("xpath", '/html/body/div[4]/div/div[3]/div/div/div/div[2]/div/div[1]/div/iframe')
+		driver.switch_to.frame(iframe)
+		driver.find_element("xpath", '/html/body/div[1]/div[2]/div/div/div[2]/div[3]/a').click()
+		indicator = driver.find_element("xpath", '/html/body/div[12]/div[2]/div[2]/div[1]/input')
+		indicator.send_keys('MACD')
+		time.sleep(2)
+		driver.find_element("xpath", '/html/body/div[12]/div[2]/div[2]/div[2]/div[1]/div/div/div').click()
+		indicator.clear()
+		indicator.send_keys('RSI')
+		time.sleep(2)
+		driver.find_element("xpath", '/html/body/div[12]/div[2]/div[2]/div[2]/div[1]/div/div/div').click()
+		indicator.clear()
+		indicator.send_keys('Expo')
+		time.sleep(2)
+		driver.find_element("xpath", '/html/body/div[12]/div[2]/div[2]/div[2]/div[1]/div/div/div').click()
+		driver.find_element("xpath", '/html/body/div[12]/div[3]').click()
+		time.sleep(2)
+		driver.find_element("xpath", '/html/body/div[1]/div[1]/div/div[3]/table/tbody/tr[1]/td[2]/div/div[3]/div[2]/span[2]/a[1]').click()
+		time.sleep(2)
+		ema = driver.find_element("xpath", '/html/body/div[12]/div[4]/div[2]/table/tbody/tr[1]/td[2]/input')
+		ema.click()
+		time.sleep(2)
+		ema.send_keys(Keys.BACK_SPACE)
+		ema.send_keys('200')
+		driver.find_element("xpath", '/html/body/div[12]/div[4]/div[4]/div/a[2]').click()
+		time.sleep(2)
+		#set one day period
+		driver.find_element("xpath", '/html/body/div[1]/div[2]/div/div/div[2]/div[1]/div/div/span[1]').click()
+		return driver
+		
+
+	def advHorcheta(self, driver):
+		time.sleep(2)
+		ema = driver.find_element("xpath", '/html/body/div[1]/div[1]/div/div[3]/table/tbody/tr[1]/td[2]/div/div[3]/div[2]/div/span[1]').get_attribute('textContent')
+		macdfast = driver.find_element("xpath", '/html/body/div[1]/div[1]/div/div[3]/table/tbody/tr[5]/td[2]/div/div[3]/div/div/span[2]/span').get_attribute('textContent')
+		macdsignal = driver.find_element("xpath", '/html/body/div[1]/div[1]/div/div[3]/table/tbody/tr[5]/td[2]/div/div[3]/div/div/span[3]/span').get_attribute('textContent')
+		time.sleep(2)
+		rsi = driver.find_element("xpath", '/html/body/div[1]/div[1]/div/div[3]/table/tbody/tr[7]/td[2]/div/div[3]/div/div/span[1]').get_attribute('textContent')
+		time.sleep(2)
+		emaText = ema
+		macdfastsign = macdfast
+		macdsignalind = macdsignal
+		rsiind = rsi
+		print("EMA is:", emaText, "MACD Signal is:", macdsignalind, "MACD Fast is:", macdfastsign, "RSI is:", rsiind)
+		time.sleep(4)
+		#return back to default
+		driver.switch_to.default_content()
+		return driver, emaText, macdsignalind, macdfastsign, rsiind
+
+	def charter(self, driver, emaText, macdsignalind, macdfastsign, rsiind):
+		# Convert string inputs to float for numerical processing
+		self._rsiind = float(rsiind)
+		self._emaText = float(emaText)
+		self._macdfastsign = float(macdsignalind)
+		self._macd = float(macdfastsign)
+		
+		buy_signal = False
+		sell_signal = False
+		
+		# Check RSI for overall market strength (range: 0-100)
+		if 30 <= self._rsiind <= 70:
+			print('RSI within neutral conditions (30-70)')
+
+			# Check the position of the current price relative to the EMA for trend indication
+			if self._currentprice >= self._emaText:
+				print('Current price above EMA: Bullish market')
+
+				# Bullish market condition: MACD line crossing above the signal line
+				if self._macd > self._macdfastsign:
+					print(f'MACD: {self._macd} is above signal line: {self._macdfastsign} -> Bullish confirmation')
+					# Optional: Check MACD histogram (optional addition for more granularity)
+					if self._macd > 0:
+						print('MACD histogram above zero: Strong bullish momentum')
+						buy_signal = True  # Set the buy signal
+					else:
+						print('MACD histogram below zero: Caution in bullish market')
+				else:
+					print(f'MACD: {self._macd} is below signal line: {self._macdfastsign} -> Bearish crossover detected')
+					# Caution if MACD crosses below the signal line, even in a bullish market
+					if self._macd < 0:
+						print('Bearish momentum detected, consider holding off buy signal')
+			else:
+				print('Current price below EMA: Bearish market')
+				# Check for potential bearish signal: MACD line crossing below the signal line
+				if self._macd < self._macdfastsign:
+					print(f'MACD: {self._macd} is below signal line: {self._macdfastsign} -> Bearish confirmation')
+					if self._macd < 0:
+						print('MACD histogram below zero: Strong bearish momentum')
+						sell_signal = True  # Set the sell signal
+					else:
+						print('MACD histogram above zero: Potential weakness in bearish momentum')
+				else:
+					print(f'MACD: {self._macd} is above signal line: {self._macdfastsign} -> Bullish crossover detected')
+					# Bearish market conditions may still have bullish opportunities, but cautiously
+					if self._macd > 0:
+						print('MACD histogram above zero, but price below EMA: Potential reversal, watch closely')
+
+		else:
+			print('RSI outside neutral conditions (overbought or oversold)')
+			# Overbought (RSI > 70) or oversold (RSI < 30) market conditions
+			if self._rsiind > 70:
+				print('RSI above 70: Overbought market, potential reversal')
+           			# Bearish signals more likely, even if MACD is bullish
+				if self._macd < self._macdfastsign:
+					print(f'MACD: {self._macd} below signal line: Bearish market')
+					sell_signal = True  # Set the sell signal
+				elif self._macd > self._macdfastsign:
+					print(f'MACD: {self._macd} above signal line: Bullish momentum, but caution in overbought market')
+					sell_signal = True  # Set the sell signal  
+					# Consider selling or holding off on new buys
+			elif self._rsiind < 30:
+				print('RSI below 30: Oversold market, potential reversal')
+				# Bullish signals more likely, even if MACD is bearish
+				if self._macd > self._macdfastsign:
+					print(f'MACD: {self._macd} above signal line: Bullish market')
+					buy_signal = True  # Set the buy signal
+
+				elif self._macd < self._macdfastsign:
+					print(f'MACD: {self._macd} below signal line: Bearish momentum, caution in oversold market')
+					buy_signal = True  # Set the buy signal
+					# Potential buy opportunity, but consider caution on low momentum
+
+		return driver, buy_signal, sell_signal
+
+	def buyer (self, driver):
+		try:
+			driver.back()
+			time.sleep(2)
+			driver.find_element("xpath", '/html/body/div[5]/div[1]/div/div[1]/a').click()
+			time.sleep(2)
+			aud = driver.find_element("xpath", '/html/body/div[6]/div/div[3]/div/div/div[2]/div[2]/div[1]/label[1]').get_attribute('textContent')
+			if 'AUD' not in aud:
+				driver.find_element("xpath", '/html/body/div[6]/div/div[3]/div/div/div[2]/div[2]/div[1]/a[2]').click()
+				time.sleep(5)		
+		
+			amount = driver.find_element("xpath", '/html/body/div[6]/div/div[3]/div/div/div[2]/div[2]/div[1]/input')
+			time.sleep(1)
+			amount.click()
+			time.sleep(2)	
+			amount.send_keys('2')
+			time.sleep(2)
+			driver.find_element("xpath", '/html/body/div[6]/div/div[3]/div/div/div[2]/div[4]/button').click()
+			time.sleep(5)
+			driver.find_element("xpath", '/html/body/div[7]/div/div/div[3]/button[2]').click()
+			time.sleep(10)
+			print('coin bought')
+		except:
+			print('buy exception triggered')
+		return driver
+
+	def seller(self, driver):
+		try: 
+			driver.back()
+			time.sleep(2)
+			driver.find_element("xpath", '/html/body/div[5]/div[1]/div/div[2]/a').click()
+			time.sleep(2)
+			driver.find_element("xpath", '/html/body/div[6]/div/div[3]/div/div/div[2]/div[1]/div[2]/h3/a')
+			time.sleep(2)
+			driver.find_element("xpath", '/html/body/div[6]/div/div[3]/div/div/div[2]/div[3]/button').click()
+			time.sleep(5)
+			driver.find_element("xpath", '/html/body/div[10]/div/div/div[3]/button[2]').click()
+			time.sleep(10)
+			print('coin sold')
+		except: 
+			print('sell exception triggered')
+		return driver
+
+	def walletchecker(self, driver, asset):
+		wallet = 'https://www.coinspot.com.au/my/wallets'
+		driver.get(wallet)
+		time.sleep(2)
+		assList = driver.find_element("xpath", '/html/body/section/div/div[3]/div[1]/input')
+		assList.send_keys(asset)
+		time.sleep(5)
+		row = driver.find_elements("xpath", "/html/body/section/div/div[3]/div[3]/table/tbody/tr[not(contains(@style,'display: none;'))]")
+		#hide them if you want, we will see straight through 
+		time.sleep(5)
+		try:
+			if row:
+				row[0].click()
+				self.orders(driver)
+			else:
+				pass
+		except:	
+			self._ordertype = ''
+			self._orderquantity = ''
+			self._orderamount = ''
+			self._currentprice = ''
+		return driver, asset, self._ordertype, self._orderquantity
+
+	def orders(self, driver):
+		driver.find_element("xpath", '/html/body/div[6]/div[2]/div[1]/div/a[5]').click()
+		time.sleep(2)
+		ordertype = driver.find_element("xpath", '/html/body/div[6]/div[2]/div[2]/div[3]/div/div/div[2]/div/table/tbody/tr[1]/td[2]').get_attribute('textContent')
+		time.sleep(2)
+		self._ordertype = ordertype
+		print(self._ordertype)
+		if self._ordertype == 'Buy':
+			
+			orderqty = driver.find_element("xpath", '/html/body/div[6]/div[2]/div[2]/div[3]/div/div/div[2]/div/table/tbody/tr[1]/td[4]').get_attribute('textContent')
+			self._orderquantity = orderqty
+			print(self._orderquantity)
+			orderamo = driver.find_element("xpath", '/html/body/div[6]/div[2]/div[2]/div[3]/div/div/div[2]/div/table/tbody/tr[1]/td[3]').get_attribute('textContent')
+			self._orderamount = orderamo
+			print(self._orderamount)
+		else:
+			pass
+		return driver, self._ordertype, self._orderamount, self._orderquantity
+
+	def coincalc(self, driver, orderamount, orderquantity, currentprice, macdsignalind, macdfastsign, rsiind):
+		try:
+			self._orderquantity = float(self._orderquantity)
+			original_price = float(orderamount)
+
+			# Calculate potential profit (considering 5% as a dynamic margin)
+			profit_margin = self._orderquantity * 1.05
+			trailing_stop_percentage = 0.05  # Start with a 5% trailing stop
+
+			# Dynamic profit margin based on market conditions (volatility, trend)
+			if self._macd > self._macdfastsign and self._rsiind < 70:  # Bullish conditions
+				# Allow more profit to be locked in if the market is showing bullish momentum
+				trailing_stop_percentage = 0.07  # Increase trailing stop to 7% for bullish trends
+				print("Bullish momentum detected, trailing stop increased to 7%.")
+
+			# Compare current price to the original price and profit margin
+			if self._currentprice >= profit_margin:
+				print(f'Profit to be made. Current price: {self._currentprice} is above 5% of original order amount: {profit_margin}')
+
+				# Calculate trailing stop dynamically
+				highest_price = max(self._currentprice, original_price)  # Keep track of highest price since buying
+				trailing_stop_price = highest_price * (1 - trailing_stop_percentage)
+
+				# If the current price drops below trailing stop, sell
+				if self._currentprice <= trailing_stop_price:
+					print(f'Trailing stop triggered. Selling at {self._currentprice} (below trailing stop of {trailing_stop_price})')
+					self.seller(driver)
+				else:
+					print(f'Current price is above trailing stop. Holding position.')
+			else:
+				print(f'Current price: {self._currentprice} is below original order amount: {profit_margin}. Not ready to sell.')
+
+		except Exception as e:
+			print(f'Error in profit calculation: {e}')
+    
+		return driver, self._orderamount, self._orderquantity, self._currentprice, self._sellindicate
+
+	def layout(self, driver):
+		#save layout
+		driver.find_element("xpath", '/html/body/div[1]/div[2]/div/div/div[1]/div/div/span[2]').click()
+		#save layout
+		layoutInp = driver.find_element("xpath", '/html/body/div[12]/div[2]/div[1]/div/div/label/input')
+		#save layout
+		driver.find_element("xpath", '/html/body/div[12]/div[3]/div[2]').click()
+		layoutInp.send_keys('Test')
+		#load layout
+		driver.find_element("xpath", '/html/body/div[12]/div[3]/div[2]').click()
+		#select layout
+		driver.find_element("xpath", '/html/body/div[12]/div[2]/div/div/div/div[2]/div/div[2]/div[1]/div[1]').click()
+		return driver
+
+
+masscookie = ['ROSE', 'FTT', 'CAKE', '1000SATS', 'SNX', 'RON', 'LUNC', 'ARKM', 'DEXE', 'KAIA', 'BLUR', 'TWT', 'XDC', 'MIOTA', 'GMT', 'ZETA', 'RSR', 'WOO', 'LPT', 'IOTX', 'OCEAN', 'KAVA', 'TFUEL', 'ETHFI', '1INCH', 'SFP', 'ID', 'CRV', 'GLM', 'HOT', 'OSMO', 'AMP', 'METIS', 'DASH', 'MANTA', 'ZIL', 'ZRX', 'JST', 'KSM', 'ENJ', 'SC', 'MASK', 'ANKR', 'RVN', 'GMX', 'ELF', 'QTUM', 'ALT', 'GAS', 'EOS', 'BTC', 'ETH', 'SOL', 'BNB', 'XRP', 'DOGE', 'ADA', 'TRX', 'TON', 'AVAX', 'SHIB', 'WBTC', 'LINK', 'BCH', 'DOT', 'SUI', 'LTC', 'UNI', 'NEAR', 'APT', 'PEPE', 'ICP', 'TAO', 'FET', 'XLM', 'AAVE', 'CRO', 'RENDER', 'MNT', 'STX', 'WIF', 'ARB', 'FIL', 'TIA', 'INJ', 'IMX', 'FTM', 'OP', 'RUNE', 'ATOM', 'VET', 'SEI', 'BONK', 'JUP', 'GRT', 'PYTH', 'ENA', 'RAY', 'FLOKI', 'MKR', 'WLD', 'THETA', 'AR', 'OM', 'HNT', 'LDO', 'ALGO', 'ONDO', 'BEAM', 'BSV', 'JASMY', 'POL', 'AERO', 'FLOW', 'CORE', 'GALA', 'APE', 'EGLD', 'ORDI', 'AXS', 'QNT', 'DYDX', 'ZEC', 'NEO', 'SSV', 'FLR', 'GNO', 'XTZ', 'ENS', 'MINA', 'AKT', 'SUPER', 'SAND', 'CKB', 'AXL', 'MANA','AIOZ', 'CHZ']
+
+url = ('url.txt')
+fh1 = open((url), mode='r')
+for lines in fh1:
+	lines.strip()
+	url = lines
+fh1.close()
+
+round1 = webDispatch(url)
+driver = round1.handler()  # Store the driver instance
+for c in range(0, 100, 1):
+	print(c)
+	for i in masscookie:
+		print('Coin is', i)
+		round1.walletchecker(driver, i)
+
+		if round1._ordertype == "Buy":
+			orderamount = round1._orderamount
+			orderquantity = round1._orderquantity
+
+			# Fetch the indicators first
+			round1.navigator(driver)
+			round1.listPick(driver, i)
+			round1.medium(driver)
+			round1.advChart(driver)
+			driver, emaText, macdsignalind, macdfastsign, rsiind = round1.advHorcheta(driver)
+			# Call charter to determine the buy/sell signals
+			driver, buy_signal, sell_signal = round1.charter(driver, emaText, macdsignalind, macdfastsign, rsiind)
+
+			if sell_signal:
+				print("Sell signal detected, placing order...")
+				round1.coincalc(driver, round1._orderamount, round1._orderquantity, round1._currentprice, macdsignalind, macdfastsign, rsiind)
+				
+		else:
+			print('no active buy orders')
+			# Fetch the indicators first
+			round1.navigator(driver)
+			round1.listPick(driver, i)
+			round1.medium(driver)
+			round1.advChart(driver)
+			driver, emaText, macdsignalind, macdfastsign, rsiind = round1.advHorcheta(driver)
+			# Call charter to determine the buy/sell signals
+			driver, buy_signal, sell_signal = round1.charter(driver, emaText, macdsignalind, macdfastsign, rsiind)
+
+			if buy_signal:
+				print("Buy signal detected, placing order...")
+				round1.buyer(driver)
+
+	round1.refresh(driver)
+
